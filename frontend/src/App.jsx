@@ -16,6 +16,8 @@ const [code,setCode] = useState("// start code here");
 const [copySuccess , setCopySuccess] = useState("")
 const [users , setUsers] = useState([])
 const [typing , setTyping] = useState("");
+const [outPut , setOutPut] = useState("");
+const [version , setVersion] = useState("*")
 
 useEffect(()=>{
   socket.on("userJoined",(users)=>{
@@ -36,11 +38,16 @@ socket.on("languageUpdate",(newLanguage)=>{
   setLanguage(newLanguage)
 })
 
+socket.on("codeResponse" , (response) => {
+  setOutPut(response.run.output)
+})
+
   return () => {
     socket.off("userJoined")
     socket.off("codeUpdate")
     socket.off("userTyping")
     socket.off("languageUpdate")
+    socket.off("codeResponse")
   }
 },[]);
 
@@ -91,6 +98,10 @@ const handleLanguageChange = e => {
   socket.emit("languageChange",{roomId,language:newLanguage})
 }
 
+const runCode = () => {
+  socket.emit("compileCode",{code , roomId , language , version})
+}
+
   if(!joined)
   {
   return (
@@ -135,20 +146,27 @@ return <div className="editor-container">
     </select>
     <button className="leave-button" onClick={leaveRoom}>Leave Room</button>
   </div>
-  <div className="editor-wrapper"></div>
-  <Editor height={"100%"}  defaultLanguage={language}
-  language={language} value ={code}
-  onChange={handleCodeChange}
-  theme="vs-dark"
-  options={
-    {
-      minimap:{enabled:false},
-      fontSize:14,
-    }
-  }
-  
-  />
-
+  <div className="editor-wrapper">
+    <div className="editor-main">
+      <div className="code-section">
+        <Editor height="100%"
+          defaultLanguage={language}
+          language={language}
+          value={code}
+          onChange={handleCodeChange}
+          theme="vs-dark"
+          options={{
+            minimap: { enabled: false },
+            fontSize: 14,
+          }}
+        />
+        <button className="run-btn" onClick={runCode}>Execute</button>
+      </div>
+      <div className="output-section">
+        <textarea className="output-console" value={outPut} readOnly placeholder="Output will appear here.." />
+      </div>
+    </div>
+  </div>
 </div>
 }
 
